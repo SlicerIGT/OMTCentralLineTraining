@@ -1,0 +1,72 @@
+<PlusConfiguration version="2.6">
+  <DataCollection StartupDelaySec="1.0" >
+    <DeviceSet
+      Name="OMT Central Line - OMT"
+      Description="Tracking of printed ArUco markers using a simple camera. Marker positions and image data are broadcasted through OpenIGTLink (on port 18944 and 18945, respectively). To use a different camera, change CaptureDeviceId attribute (to 0, 1, 2, ...)." />
+    <Device
+      Id="VideoDevice"
+      Type="MmfVideo"
+      FrameSize="640 480"
+      VideoFormat="YUY2"
+      CaptureDeviceId="2" >
+      <DataSources>
+        <DataSource Type="Video" Id="Video" PortUsImageOrientation="MF" ImageType="RGB_COLOR" />
+      </DataSources>
+      <OutputChannels>
+        <OutputChannel Id="VideoStream" VideoDataSourceId="Video" />
+      </OutputChannels>
+    </Device>
+    <Device
+      Id="TrackerDevice"
+      Type="OpticalMarkerTracker"
+      CameraCalibrationFile="intel_RS_d415_calibration.yml"
+      ToolReferenceFrame="Tracker"
+      TrackingMethod="OPTICAL"
+      MarkerDictionary="ARUCO_MIP_36h12">
+      <DataSources>
+        <DataSource Type="Tool" Id="USProbe" MarkerId="1" MarkerSizeMm="45" />
+        <DataSource Type="Tool" Id="Needle" MarkerId="2" MarkerSizeMm="45" />
+      </DataSources>
+      <InputChannels>
+        <InputChannel Id="VideoStream"  />
+      </InputChannels>
+      <OutputChannels>
+        <OutputChannel Id="TrackerStream" >
+          <DataSource Id="USProbe"/>
+          <DataSource Id="Needle"/>
+        </OutputChannel>
+      </OutputChannels>
+    </Device>
+    <Device 
+      Id="TrackedVideoDevice" 
+      Type="VirtualMixer" >
+      <InputChannels>
+        <InputChannel Id="TrackerStream" />
+        <InputChannel Id="VideoStream" />
+      </InputChannels>
+      <OutputChannels>
+        <OutputChannel Id="TrackedVideoStream"/>
+      </OutputChannels>
+    </Device>
+  </DataCollection>
+  
+  <PlusOpenIGTLinkServer 
+    MaxNumberOfIgtlMessagesToSend="1" 
+    MaxTimeSpentWithProcessingMs="50" 
+    ListeningPort="18945" 
+    SendValidTransformsOnly="true" 
+    OutputChannelId="TrackedVideoStream" > 
+    <DefaultClientInfo> 
+      <MessageTypes> 
+        <Message Type="IMAGE" />
+        <Message Type="TRANSFORM" />
+      </MessageTypes>
+      <TransformNames>
+        <Transform Name="NeedleToUSProbe" />
+      </TransformNames>
+      <ImageNames>
+        <Image Name="Video" EmbeddedTransformToFrame="Video" />
+      </ImageNames>
+    </DefaultClientInfo>
+  </PlusOpenIGTLinkServer>
+</PlusConfiguration>
